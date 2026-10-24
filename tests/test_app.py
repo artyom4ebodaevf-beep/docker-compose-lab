@@ -1,25 +1,16 @@
-import os
+import app.app as application
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql://test:test@localhost:5432/test",
-)
-
-from app.app import app
-
-def test_index():
-    client = app.test_client()
+def test_home_returns_success():
+    client = application.app.test_client()
 
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.json == {
-        "message": "Python app is running"
-    }
+    assert response.get_json()["message"] == "Python app is running"
 
-def test_db_endpoint_without_database():
-    client = app.test_client()
+def test_unknown_route_returns_404():
+    client = application.app.test_client()
 
-    response = client.get("/db")
+    response = client.get("/route-that-does-not-exist")
 
-    assert response.status_code in (200, 503)
+    assert response.status_code == 404

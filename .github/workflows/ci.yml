@@ -8,13 +8,10 @@ on:
 
 permissions:
   contents: read
-  packages: write
-
-env:
-  REGISTRY: ghcr.io
 
 jobs:
-  build:
+  test:
+    name: Test application
     runs-on: ubuntu-latest
 
     steps:
@@ -35,8 +32,22 @@ jobs:
       - name: Run tests
         run: python -m pytest -v
 
+  build_publish:
+    name: Build and publish image
+    needs: test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set lowercase image name
         id: image
+        shell: bash
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
@@ -50,9 +61,9 @@ jobs:
       - name: Build Docker image
         run: docker build -t ${{ steps.image.outputs.name }}:${{ github.sha }} .
 
-      - name: Publish Docker image
+      - name: Publish image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           docker push ${{ steps.image.outputs.name }}:${{ github.sha }}
           docker tag ${{ steps.image.outputs.name }}:${{ github.sha }} ${{ steps.image.outputs.name }}:latest
-          docker push ${{ steps.image.outputs.name }}:latest
+          docker push ${{ steps.image.outputs.name }}:latest   
